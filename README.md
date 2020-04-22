@@ -1,7 +1,7 @@
 # Rest Api Node
 
 ## Description
-This is an Restful API for Node.js for storage files (and Mysql in the next), it is an API there are no views, just models and controllers.
+This is a Node.js Restful API for storage files (indexing them by Mysql will be implemented later), it is an API without views, just models and controllers.
 
 ##### Routing         : Express
 
