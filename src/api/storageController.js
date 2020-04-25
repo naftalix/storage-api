@@ -1,64 +1,148 @@
 const fs = require('fs');
 const path = require('path');
+const utils = require('util');
 const CONFIG = require('../config/appConfig');
 const { v4: uuidv4 } = require('uuid');
+const _ = require('lodash');
 
 const getDataPath = (dataId) => {
-    var dataPath = path.join(__dirname,CONFIG.STORAGEPATH,dataId);
+    var dataPath = path.join(__dirname, '../../', CONFIG.STORAGEPATH, dataId);
     return dataPath;
 }
 
-const getBodyData = (req) => {
-    
+const createDataFile = (req) => {
+    const file = _.values(req.files)[0];
+    var id = req.params.dataID;
+    const uuid = id ? id : uuidv4();
+    return { data: file, dataId: uuid };
 }
 
-const addData = async function (data) {
+
+const getStoragedFile = async (req) => {
+    const dataId = req.params.dataID;
+    const destination = getDataPath(dataId);
+
+    var isFileExist = await utils.promisify(fs.exists)(destination);
+    if(isFileExist){
+        return destination;
+    }
+    return null;
+}
+
+const addData = async function (req, res) {
 
     try {
-        const dataId = uuidv4();
-        const destination = getDataPath(dataId);
-        await fs.promises.writeFile(destination, data);
-        console.log(`File uuid ${dataId} saves successfully`);
-        return uuid;
+        if (!req.files) {
+            res.send({
+                status: false,
+                message: 'No file uploaded'
+            });
+        } else {
+
+            const dataFile = createDataFile(req);
+            const destination = getDataPath(dataFile.dataId);
+            await dataFile.data.mv(destination);
+            console.log(`File uuid ${dataFile.dataId} saves successfully`);
+
+            res.send({
+                status: true,
+                message: 'File is uploaded',
+                data: {
+                    id: dataFile.dataId,
+                    mimetype: dataFile.data.mimetype,
+                    size: dataFile.data.size
+                }
+            });
+        }
 
     } catch (err) {
-        console.error(err);        
+        console.log(err);
+        res.status(500).send("Internal Error");
     }
 }
 
-const getData = async function (dataId) {
+const getData = async function (req, res) {
 
     try {
-        const destination = getDataPath(dataId);
-        const data = await fs.promises.readFile(destination);
-        console.log(`File uuid ${dataId} retrieved successfully`);
-        return data;
+        const destination = await getStoragedFile(req);
+        if (!destination) {
+            res.send({
+                status: false,
+                message: 'File Not Exist'
+            });
+        }
+        else {
+            const data = await fs.promises.readFile(destination);
+            console.log(`File uuid ${req.params.dataID} retrieved successfully`);
+            res.writeHead(200, {
+                "Content-Type": "application/octet-stream",
+                "Content-Disposition": `attachment; filename=${req.params.dataID}`
+            });
+            res.write(data);
+            res.end();
+            console.log(`File uuid ${req.params.dataID} sent successfully`);
 
+        }
     } catch (err) {
-        console.error(err);        
+        console.log(err);
+        res.status(500).send("Internal Error");
     }
 }
 
-const updateData = async function (dataId, data) {
+const updateData = async function (req, res) {
 
     try {
-        const destination = getDataPath(dataId);
-        await fs.promises.writeFile(destination, data);
-        console.log(`File uuid ${dataId} updated successfully`);
-
+        const destination = await getStoragedFile(req);
+        if (!req.files || !destination) {
+            res.send({
+                status: false,
+                message: 'No file updated'
+            });
+        }
+        else {
+            const dataFile = createDataFile(req);
+            await dataFile.data.mv(destination);
+            console.log(`File uuid ${dataFile.dataId} updated successfully`);
+            res.send({
+                status: true,
+                message: 'File is updated',
+                data: {
+                    id: dataFile.dataId,
+                    size: dataFile.data.size
+                }
+            });
+        }
     } catch (err) {
-        console.error(err);        
+        console.log(err);
+        res.status(500).send("Internal Error");
     }
 }
 
-const deleteData = async function (dataId) {
+const deleteData = async function (req, res) {
 
     try {
-        const destination = getDataPath(dataId);
-        const data = await fs.promises.unlink(destination);
-        console.log(`File uuid ${dataId} deleted successfully`);
+        const destination = await getStoragedFile(req);
+        if (!destination) {
+            res.send({
+                status: false,
+                message: 'File Not Exist'
+            });
+        }
+        else {
+            await fs.promises.unlink(destination);
+            console.log(`File uuid ${req.params.dataID} deleted successfully`);
+            res.send({
+                status: true,
+                message: 'File is deleted',
+                data: {
+                    id: dataFile.dataId,
+                    size: dataFile.data.size
+                }
+            });
+        }
     } catch (err) {
-        console.error(err);        
+        console.log(err);
+        res.status(500).send("Internal Error");
     }
 }
 
@@ -68,49 +152,3 @@ module.exports.updateData = updateData;
 module.exports.deleteData = deleteData;
 
 
-const create = async function (req, res) {
-    const body = req.body;
-
-    if (!body.unique_key && !body.email && !body.phone) {
-        return ReE(res, 'Please enter an email or phone number to register.');
-    } else if (!body.password) {
-        return ReE(res, 'Please enter a password to register.');
-    } else {
-        let err, user;
-
-        [err, user] = await to(authService.createUser(body));
-
-        if (err) return ReE(res, err, 422);
-        return ReS(res, { message: 'Successfully created new user.', user: user.toWeb(), token: user.getJWT() }, 201);
-    }
-}
-
-const get = async function (req, res) {
-    let user = req.user;
-
-    return ReS(res, { user: user.toWeb() });
-}
-
-const update = async function (req, res) {
-    let err, user, data
-    user = req.user;
-    data = req.body;
-    user.set(data);
-
-    [err, user] = await to(user.save());
-    if (err) {
-        if (err.message == 'Validation error') err = 'The email address or phone number is already in use';
-        return ReE(res, err);
-    }
-    return ReS(res, { message: 'Updated User: ' + user.email });
-}
-
-const remove = async function (req, res) {
-    let user, err;
-    user = req.user;
-
-    [err, user] = await to(user.destroy());
-    if (err) return ReE(res, 'error occured trying to delete user');
-
-    return ReS(res, { message: 'Deleted User' }, 204);
-}
