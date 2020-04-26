@@ -1,4 +1,5 @@
 const fs = require('fs');
+const pe = require('parse-error');
 const path = require('path');
 const utils = require('util');
 const CONFIG = require('../config/appConfig');
@@ -56,7 +57,7 @@ const addData = async function (req, res) {
         }
 
     } catch (err) {
-        console.log(err);
+        console.log("Internal Error", pe(err));
         res.status(500).send("Internal Error");
     }
 }
@@ -84,7 +85,7 @@ const getData = async function (req, res) {
 
         }
     } catch (err) {
-        console.log(err);
+        console.log("Internal Error", pe(err));
         res.status(500).send("Internal Error");
     }
 }
@@ -113,7 +114,7 @@ const updateData = async function (req, res) {
             });
         }
     } catch (err) {
-        console.log(err);
+        console.log("Internal Error", pe(err));
         res.status(500).send("Internal Error");
     }
 }
@@ -141,7 +142,7 @@ const deleteData = async function (req, res) {
             });
         }
     } catch (err) {
-        console.log(err);
+        console.log("Internal Error", pe(err));
         res.status(500).send("Internal Error");
     }
 }
