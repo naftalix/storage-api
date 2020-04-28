@@ -4,7 +4,8 @@
   "description": "Storage Data as byte Files",
   "main": "app.js",
   "scripts": {
-    "test": "test"
+    "test": "test",
+    "start": "node ./src/app.js"
   },
   "author": "Naftali Hershler",
   "license": "ISC",
