@@ -16,7 +16,7 @@
     "express": "^4.17.1",
     "express-fileupload": "^1.1.9",
     "fs": "0.0.1-security",
-    "lodash": "^4.17.19",
+    "lodash": "^4.17.21",
     "logger": "0.0.1",
     "morgan": "^1.10.0",
     "mysql": "^2.18.1",
